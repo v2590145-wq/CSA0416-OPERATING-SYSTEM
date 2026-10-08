@@ -1,0 +1,66 @@
+#include <stdio.h>
+
+int main(void)
+{
+    int n;
+    int burst[100], process[100], waiting[100], turnaround[100];
+    double total_waiting = 0, total_turnaround = 0;
+
+    printf("Enter number of processes: ");
+    scanf("%d", &n);
+
+    if (n < 1 || n > 100) {
+        printf("Number of processes must be between 1 and 100.\n");
+        return 1;
+    }
+
+    for (int i = 0; i < n; i++) {
+        process[i] = i + 1;
+        printf("Enter execution time for P%d: ", process[i]);
+        scanf("%d", &burst[i]);
+
+        if (burst[i] < 0) {
+            printf("Execution time cannot be negative.\n");
+            return 1;
+        }
+    }
+
+    /* Sort by execution time; ties keep the original order. */
+    for (int i = 0; i < n - 1; i++) {
+        for (int j = 0; j < n - i - 1; j++) {
+            if (burst[j] > burst[j + 1]) {
+                int temp = burst[j];
+                burst[j] = burst[j + 1];
+                burst[j + 1] = temp;
+
+                temp = process[j];
+                process[j] = process[j + 1];
+                process[j + 1] = temp;
+            }
+        }
+    }
+
+    waiting[0] = 0;
+    for (int i = 1; i < n; i++)
+        waiting[i] = waiting[i - 1] + burst[i - 1];
+
+    for (int i = 0; i < n; i++) {
+        turnaround[i] = waiting[i] + burst[i];
+        total_waiting += waiting[i];
+        total_turnaround += turnaround[i];
+    }
+
+    printf("\nSJF schedule: ");
+    for (int i = 0; i < n; i++)
+        printf("P%d%s", process[i], i == n - 1 ? "\n" : " -> ");
+
+    printf("\nProcess\tExecution\tWaiting\tTurnaround\n");
+    for (int i = 0; i < n; i++)
+        printf("P%d\t%d\t\t%d\t%d\n",
+               process[i], burst[i], waiting[i], turnaround[i]);
+
+    printf("\nAverage waiting time: %.2f\n", total_waiting / n);
+    printf("Average turnaround time: %.2f\n", total_turnaround / n);
+
+    return 0;
+}
