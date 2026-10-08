@@ -1,0 +1,29 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <sys/wait.h>
+
+int main(void)
+{
+    pid_t child_pid = fork();
+
+    if (child_pid < 0) {
+        perror("fork");
+        return 1;
+    }
+
+    if (child_pid == 0) {
+        /* Child process */
+        printf("Child:  PID = %ld, Parent PID = %ld\n",
+               (long)getpid(), (long)getppid());
+    } else {
+        /* Parent process */
+        printf("Parent: PID = %ld, Parent PID = %ld\n",
+               (long)getpid(), (long)getppid());
+
+        /* Wait so the child finishes before the parent exits */
+        wait(NULL);
+    }
+
+    return 0;
+}
