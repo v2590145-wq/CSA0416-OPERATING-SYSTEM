@@ -1,0 +1,66 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <fcntl.h>
+#include <sys/mman.h>
+#include <sys/wait.h>
+
+#define SHM_NAME "/ipc_shared_memory_demo"
+#define SHM_SIZE 1024
+
+int main(void) {
+    /* Create shared memory and set its size. */
+    int fd = shm_open(SHM_NAME, O_CREAT | O_EXCL | O_RDWR, 0600);
+    if (fd == -1) {
+        perror("shm_open");
+        return 1;
+    }
+
+    if (ftruncate(fd, SHM_SIZE) == -1) {
+        perror("ftruncate");
+        shm_unlink(SHM_NAME);
+        close(fd);
+        return 1;
+    }
+
+    /* Map the shared memory into this process's address space. */
+    char *shared = mmap(NULL, SHM_SIZE, PROT_READ | PROT_WRITE,
+                        MAP_SHARED, fd, 0);
+    if (shared == MAP_FAILED) {
+        perror("mmap");
+        shm_unlink(SHM_NAME);
+        close(fd);
+        return 1;
+    }
+
+    close(fd); /* The mapping remains available after closing the descriptor. */
+
+    pid_t pid = fork();
+    if (pid == -1) {
+        perror("fork");
+        munmap(shared, SHM_SIZE);
+        shm_unlink(SHM_NAME);
+        return 1;
+    }
+
+    if (pid == 0) {
+        /* Child waits until the parent writes a message. */
+        while (shared[0] == '\0') {
+            usleep(1000);
+        }
+
+        printf("Child read from shared memory: %s\n", shared);
+        munmap(shared, SHM_SIZE);
+        return 0;
+    }
+
+    /* Parent writes into the memory region shared with the child. */
+    snprintf(shared, SHM_SIZE, "Hello from the parent process!");
+    waitpid(pid, NULL, 0);
+
+    munmap(shared, SHM_SIZE);
+    shm_unlink(SHM_NAME); /* Remove the shared memory object. */
+
+    return 0;
+}
