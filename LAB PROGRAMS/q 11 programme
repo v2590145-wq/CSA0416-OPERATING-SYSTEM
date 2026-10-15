@@ -1,0 +1,40 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <pthread.h>
+
+#define NUM_THREADS 2
+
+void *print_numbers(void *arg) {
+    int thread_id = *(int *)arg;
+
+    for (int i = 1; i <= 5; i++) {
+        printf("Thread %d: %d\n", thread_id, i);
+    }
+
+    return NULL;
+}
+
+int main(void) {
+    pthread_t threads[NUM_THREADS];
+    int thread_ids[NUM_THREADS] = {1, 2};
+
+    for (int i = 0; i < NUM_THREADS; i++) {
+        int result = pthread_create(&threads[i], NULL,
+                                    print_numbers, &thread_ids[i]);
+        if (result != 0) {
+            fprintf(stderr, "Failed to create thread %d\n", i + 1);
+            return 1;
+        }
+    }
+
+    for (int i = 0; i < NUM_THREADS; i++) {
+        int result = pthread_join(threads[i], NULL);
+        if (result != 0) {
+            fprintf(stderr, "Failed to join thread %d\n", i + 1);
+            return 1;
+        }
+    }
+
+    printf("Both threads have finished.\n");
+    return 0;
+}
