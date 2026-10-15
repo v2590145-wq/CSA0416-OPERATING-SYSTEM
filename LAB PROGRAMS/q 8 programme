@@ -1,0 +1,107 @@
+#include <stdio.h>
+
+#define MAX_PROCESSES 100
+
+int main(void) {
+    int n, quantum;
+    int arrival[MAX_PROCESSES], burst[MAX_PROCESSES];
+    int remaining[MAX_PROCESSES], completion[MAX_PROCESSES];
+    int time = 0, completed = 0;
+
+    printf("Enter number of processes (1-%d): ", MAX_PROCESSES);
+    if (scanf("%d", &n) != 1 || n < 1 || n > MAX_PROCESSES) {
+        printf("Invalid number of processes.\n");
+        return 1;
+    }
+
+    for (int i = 0; i < n; i++) {
+        printf("Enter arrival time and burst time for P%d: ", i + 1);
+        if (scanf("%d %d", &arrival[i], &burst[i]) != 2 ||
+            arrival[i] < 0 || burst[i] <= 0) {
+            printf("Arrival time must be nonnegative and burst time positive.\n");
+            return 1;
+        }
+        remaining[i] = burst[i];
+    }
+
+    printf("Enter time quantum: ");
+    if (scanf("%d", &quantum) != 1 || quantum <= 0) {
+        printf("Time quantum must be positive.\n");
+        return 1;
+    }
+
+    /*
+     * Ready queue stores process indexes. Processes are added when they
+     * arrive, and unfinished processes return to the queue's tail.
+     */
+    int queue[MAX_PROCESSES * 1000];
+    int front = 0, rear = 0;
+    int next_process = 0;
+
+    /* Sort process indexes by arrival time, preserving input order for ties. */
+    int order[MAX_PROCESSES];
+    for (int i = 0; i < n; i++) order[i] = i;
+
+    for (int i = 0; i < n - 1; i++) {
+        for (int j = i + 1; j < n; j++) {
+            if (arrival[order[j]] < arrival[order[i]]) {
+                int temp = order[i];
+                order[i] = order[j];
+                order[j] = temp;
+            }
+        }
+    }
+
+    while (completed < n) {
+        /* Add all processes that have arrived by the current time. */
+        while (next_process < n && arrival[order[next_process]] <= time) {
+            queue[rear++] = order[next_process++];
+        }
+
+        if (front == rear) {
+            /* No process is ready; advance time to the next arrival. */
+            time = arrival[order[next_process]];
+            continue;
+        }
+
+        int current = queue[front++];
+        int run_time = remaining[current] < quantum
+                           ? remaining[current]
+                           : quantum;
+
+        time += run_time;
+        remaining[current] -= run_time;
+
+        /* Add processes that arrived while this process was running. */
+        while (next_process < n && arrival[order[next_process]] <= time) {
+            queue[rear++] = order[next_process++];
+        }
+
+        if (remaining[current] > 0) {
+            queue[rear++] = current;
+        } else {
+            completion[current] = time;
+            completed++;
+        }
+    }
+
+    printf("\nPID\tArrival\tBurst\tCompletion\tWaiting\tTurnaround\n");
+    double total_waiting = 0.0, total_turnaround = 0.0;
+
+    for (int i = 0; i < n; i++) {
+        int turnaround = completion[i] - arrival[i];
+        int waiting = turnaround - burst[i];
+
+        printf("P%d\t%d\t%d\t%d\t\t%d\t%d\n",
+               i + 1, arrival[i], burst[i], completion[i],
+               waiting, turnaround);
+
+        total_waiting += waiting;
+        total_turnaround += turnaround;
+    }
+
+    printf("\nAverage waiting time: %.2f\n", total_waiting / n);
+    printf("Average turnaround time: %.2f\n", total_turnaround / n);
+
+    return 0;
+}
