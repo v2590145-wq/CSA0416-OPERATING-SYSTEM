@@ -1,0 +1,90 @@
+#include <stdio.h>
+
+#define MAX_PROCESSES 100
+
+typedef struct {
+    int pid;
+    int arrival_time;
+    int burst_time;
+    int priority;
+    int waiting_time;
+    int turnaround_time;
+    int completed;
+} Process;
+
+int main(void) {
+    Process p[MAX_PROCESSES];
+    int n, time = 0, completed = 0;
+
+    printf("Number of processes: ");
+    if (scanf("%d", &n) != 1 || n < 1 || n > MAX_PROCESSES) {
+        printf("Enter a number from 1 to %d.\n", MAX_PROCESSES);
+        return 1;
+    }
+
+    for (int i = 0; i < n; i++) {
+        p[i].pid = i + 1;
+        p[i].completed = 0;
+
+        printf("Process %d — arrival time, burst time, priority: ", p[i].pid);
+        if (scanf("%d %d %d", &p[i].arrival_time,
+                  &p[i].burst_time, &p[i].priority) != 3 ||
+            p[i].arrival_time < 0 || p[i].burst_time <= 0) {
+            printf("Invalid input. Arrival time must be nonnegative "
+                   "and burst time must be positive.\n");
+            return 1;
+        }
+    }
+
+    /*
+     * Non-preemptive priority scheduling:
+     * At each step, choose the arrived, unfinished process with the
+     * highest priority. A larger priority number means higher priority.
+     * Ties are broken by earlier arrival, then lower process ID.
+     */
+    while (completed < n) {
+        int selected = -1;
+
+        for (int i = 0; i < n; i++) {
+            if (p[i].completed || p[i].arrival_time > time)
+                continue;
+
+            if (selected == -1 ||
+                p[i].priority > p[selected].priority ||
+                (p[i].priority == p[selected].priority &&
+                 p[i].arrival_time < p[selected].arrival_time) ||
+                (p[i].priority == p[selected].priority &&
+                 p[i].arrival_time == p[selected].arrival_time &&
+                 p[i].pid < p[selected].pid)) {
+                selected = i;
+            }
+        }
+
+        if (selected == -1) {
+            time++; // No process has arrived yet.
+            continue;
+        }
+
+        p[selected].waiting_time = time - p[selected].arrival_time;
+        time += p[selected].burst_time;
+        p[selected].turnaround_time = time - p[selected].arrival_time;
+        p[selected].completed = 1;
+        completed++;
+    }
+
+    double total_waiting = 0, total_turnaround = 0;
+
+    printf("\nPID\tArrival\tBurst\tPriority\tWaiting\tTurnaround\n");
+    for (int i = 0; i < n; i++) {
+        printf("%d\t%d\t%d\t%d\t\t%d\t%d\n",
+               p[i].pid, p[i].arrival_time, p[i].burst_time,
+               p[i].priority, p[i].waiting_time, p[i].turnaround_time);
+        total_waiting += p[i].waiting_time;
+        total_turnaround += p[i].turnaround_time;
+    }
+
+    printf("\nAverage waiting time: %.2f\n", total_waiting / n);
+    printf("Average turnaround time: %.2f\n", total_turnaround / n);
+
+    return 0;
+}
