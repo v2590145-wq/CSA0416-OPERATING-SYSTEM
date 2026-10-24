@@ -1,0 +1,82 @@
+#include <stdio.h>
+
+#define MAX 100
+
+void allocateMemory(const char *strategy, int blocks[], int blockCount,
+                    const int processes[], int processCount, int mode)
+{
+    int remaining[MAX];
+    int allocation[MAX];
+
+    for (int i = 0; i < blockCount; i++)
+        remaining[i] = blocks[i];
+
+    for (int i = 0; i < processCount; i++)
+        allocation[i] = -1;
+
+    for (int i = 0; i < processCount; i++) {
+        int chosen = -1;
+
+        for (int j = 0; j < blockCount; j++) {
+            if (remaining[j] < processes[i])
+                continue;
+
+            if (mode == 0) {             // First Fit
+                chosen = j;
+                break;
+            } else if (mode == 1) {      // Best Fit
+                if (chosen == -1 || remaining[j] < remaining[chosen])
+                    chosen = j;
+            } else {                     // Worst Fit
+                if (chosen == -1 || remaining[j] > remaining[chosen])
+                    chosen = j;
+            }
+        }
+
+        if (chosen != -1) {
+            allocation[i] = chosen;
+            remaining[chosen] -= processes[i];
+        }
+    }
+
+    printf("\n%s\n", strategy);
+    printf("Process\tSize\tAllocated block\n");
+
+    for (int i = 0; i < processCount; i++) {
+        if (allocation[i] == -1)
+            printf("P%d\t%d\tNot allocated\n", i + 1, processes[i]);
+        else
+            printf("P%d\t%d\tBlock %d\n",
+                   i + 1, processes[i], allocation[i] + 1);
+    }
+
+    printf("Remaining space in blocks: ");
+    for (int i = 0; i < blockCount; i++)
+        printf("%d%s", remaining[i], i == blockCount - 1 ? "\n" : " ");
+}
+
+int main(void)
+{
+    int blocks[] = {100, 500, 200, 300, 600};
+    int processes[] = {212, 417, 112, 426};
+
+    int blockCount = sizeof(blocks) / sizeof(blocks[0]);
+    int processCount = sizeof(processes) / sizeof(processes[0]);
+
+    printf("Memory blocks: ");
+    for (int i = 0; i < blockCount; i++)
+        printf("%d%s", blocks[i], i == blockCount - 1 ? "\n" : " ");
+
+    printf("Processes: ");
+    for (int i = 0; i < processCount; i++)
+        printf("%d%s", processes[i], i == processCount - 1 ? "\n" : " ");
+
+    allocateMemory("First Fit", blocks, blockCount,
+                   processes, processCount, 0);
+    allocateMemory("Best Fit", blocks, blockCount,
+                   processes, processCount, 1);
+    allocateMemory("Worst Fit", blocks, blockCount,
+                   processes, processCount, 2);
+
+    return 0;
+}
