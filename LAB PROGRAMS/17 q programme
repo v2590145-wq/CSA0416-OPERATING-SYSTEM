@@ -1,0 +1,105 @@
+#include <stdio.h>
+
+#define MAX_PROCESSES 10
+#define MAX_RESOURCES 10
+
+int main(void)
+{
+    int processes, resources;
+    int allocation[MAX_PROCESSES][MAX_RESOURCES];
+    int maximum[MAX_PROCESSES][MAX_RESOURCES];
+    int need[MAX_PROCESSES][MAX_RESOURCES];
+    int available[MAX_RESOURCES];
+
+    int work[MAX_RESOURCES];
+    int finish[MAX_PROCESSES] = {0};
+    int safeSequence[MAX_PROCESSES];
+    int safeCount = 0;
+
+    printf("Enter number of processes: ");
+    if (scanf("%d", &processes) != 1 ||
+        processes < 1 || processes > MAX_PROCESSES) {
+        printf("Invalid number of processes.\n");
+        return 1;
+    }
+
+    printf("Enter number of resource types: ");
+    if (scanf("%d", &resources) != 1 ||
+        resources < 1 || resources > MAX_RESOURCES) {
+        printf("Invalid number of resource types.\n");
+        return 1;
+    }
+
+    printf("Enter Allocation matrix (%d x %d):\n", processes, resources);
+    for (int i = 0; i < processes; i++) {
+        for (int j = 0; j < resources; j++) {
+            if (scanf("%d", &allocation[i][j]) != 1 || allocation[i][j] < 0) {
+                printf("Invalid allocation value.\n");
+                return 1;
+            }
+        }
+    }
+
+    printf("Enter Maximum matrix (%d x %d):\n", processes, resources);
+    for (int i = 0; i < processes; i++) {
+        for (int j = 0; j < resources; j++) {
+            if (scanf("%d", &maximum[i][j]) != 1 ||
+                maximum[i][j] < allocation[i][j]) {
+                printf("Invalid maximum value. It must be >= allocation.\n");
+                return 1;
+            }
+            need[i][j] = maximum[i][j] - allocation[i][j];
+        }
+    }
+
+    printf("Enter Available vector (%d values):\n", resources);
+    for (int j = 0; j < resources; j++) {
+        if (scanf("%d", &available[j]) != 1 || available[j] < 0) {
+            printf("Invalid available value.\n");
+            return 1;
+        }
+        work[j] = available[j];
+    }
+
+    // Safety algorithm: find a sequence in which every process can finish.
+    while (safeCount < processes) {
+        int found = 0;
+
+        for (int i = 0; i < processes; i++) {
+            if (finish[i])
+                continue;
+
+            int canFinish = 1;
+            for (int j = 0; j < resources; j++) {
+                if (need[i][j] > work[j]) {
+                    canFinish = 0;
+                    break;
+                }
+            }
+
+            if (canFinish) {
+                for (int j = 0; j < resources; j++)
+                    work[j] += allocation[i][j];
+
+                safeSequence[safeCount++] = i;
+                finish[i] = 1;
+                found = 1;
+            }
+        }
+
+        if (!found)
+            break;
+    }
+
+    if (safeCount == processes) {
+        printf("\nThe system is in a SAFE state.\nSafe sequence: ");
+        for (int i = 0; i < processes; i++)
+            printf("P%d%s", safeSequence[i],
+                   (i == processes - 1) ? "\n" : " -> ");
+    } else {
+        printf("\nThe system is in an UNSAFE state.\n");
+        printf("No safe sequence exists for the current state.\n");
+    }
+
+    return 0;
+}
