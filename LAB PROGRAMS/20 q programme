@@ -1,0 +1,101 @@
+#include <pthread.h>
+#include <semaphore.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+
+#define READERS 5
+#define WRITERS 2
+#define ROUNDS  3
+
+sem_t mutex;       // Protects the reader count
+sem_t write_lock;  // Gives writers exclusive access
+int reader_count = 0;
+int shared_data = 0;
+
+void *reader(void *arg)
+{
+    int id = *(int *)arg;
+
+    for (int i = 0; i < ROUNDS; i++) {
+        sem_wait(&mutex);
+        reader_count++;
+        if (reader_count == 1) {
+            sem_wait(&write_lock);  // First reader blocks writers
+        }
+        sem_post(&mutex);
+
+        printf("Reader %d reads value %d\n", id, shared_data);
+        sleep(1);
+
+        sem_wait(&mutex);
+        reader_count--;
+        if (reader_count == 0) {
+            sem_post(&write_lock);  // Last reader lets writers proceed
+        }
+        sem_post(&mutex);
+
+        sleep(1);
+    }
+
+    return NULL;
+}
+
+void *writer(void *arg)
+{
+    int id = *(int *)arg;
+
+    for (int i = 0; i < ROUNDS; i++) {
+        sem_wait(&write_lock);
+
+        shared_data++;
+        printf("Writer %d updates value to %d\n", id, shared_data);
+        sleep(1);
+
+        sem_post(&write_lock);
+        sleep(1);
+    }
+
+    return NULL;
+}
+
+int main(void)
+{
+    pthread_t readers[READERS];
+    pthread_t writers[WRITERS];
+    int reader_ids[READERS];
+    int writer_ids[WRITERS];
+
+    if (sem_init(&mutex, 0, 1) != 0 ||
+        sem_init(&write_lock, 0, 1) != 0) {
+        perror("sem_init");
+        return EXIT_FAILURE;
+    }
+
+    for (int i = 0; i < READERS; i++) {
+        reader_ids[i] = i + 1;
+        if (pthread_create(&readers[i], NULL, reader, &reader_ids[i]) != 0) {
+            perror("pthread_create");
+            return EXIT_FAILURE;
+        }
+    }
+
+    for (int i = 0; i < WRITERS; i++) {
+        writer_ids[i] = i + 1;
+        if (pthread_create(&writers[i], NULL, writer, &writer_ids[i]) != 0) {
+            perror("pthread_create");
+            return EXIT_FAILURE;
+        }
+    }
+
+    for (int i = 0; i < READERS; i++) {
+        pthread_join(readers[i], NULL);
+    }
+    for (int i = 0; i < WRITERS; i++) {
+        pthread_join(writers[i], NULL);
+    }
+
+    sem_destroy(&mutex);
+    sem_destroy(&write_lock);
+    return EXIT_SUCCESS;
+}
