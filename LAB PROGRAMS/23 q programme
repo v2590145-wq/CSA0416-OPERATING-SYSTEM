@@ -1,0 +1,62 @@
+#include <stdio.h>
+
+int main(void) {
+    int blockCount, processCount;
+
+    printf("Enter the number of memory blocks: ");
+    if (scanf("%d", &blockCount) != 1 || blockCount <= 0) {
+        printf("Invalid number of blocks.\n");
+        return 1;
+    }
+
+    int remaining[blockCount];
+
+    printf("Enter the size of each memory block:\n");
+    for (int i = 0; i < blockCount; i++) {
+        if (scanf("%d", &remaining[i]) != 1 || remaining[i] < 0) {
+            printf("Invalid block size.\n");
+            return 1;
+        }
+    }
+
+    printf("Enter the number of processes: ");
+    if (scanf("%d", &processCount) != 1 || processCount <= 0) {
+        printf("Invalid number of processes.\n");
+        return 1;
+    }
+
+    int processSize[processCount];
+    int allocation[processCount];
+
+    printf("Enter the size of each process:\n");
+    for (int i = 0; i < processCount; i++) {
+        if (scanf("%d", &processSize[i]) != 1 || processSize[i] < 0) {
+            printf("Invalid process size.\n");
+            return 1;
+        }
+        allocation[i] = -1;
+    }
+
+    /* First Fit: use the first block with enough remaining space. */
+    for (int i = 0; i < processCount; i++) {
+        for (int j = 0; j < blockCount; j++) {
+            if (remaining[j] >= processSize[i]) {
+                allocation[i] = j;
+                remaining[j] -= processSize[i];
+                break;
+            }
+        }
+    }
+
+    printf("\nProcess\tSize\tBlock\n");
+    for (int i = 0; i < processCount; i++) {
+        if (allocation[i] == -1) {
+            printf("P%d\t%d\tNot allocated\n", i + 1, processSize[i]);
+        } else {
+            printf("P%d\t%d\t%d\n", i + 1, processSize[i],
+                   allocation[i] + 1);
+        }
+    }
+
+    return 0;
+}
