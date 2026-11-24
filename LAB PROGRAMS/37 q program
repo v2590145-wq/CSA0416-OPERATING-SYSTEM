@@ -1,0 +1,48 @@
+#include <stdio.h>
+#include <stdlib.h>
+
+#define MAX_REQUESTS 100
+
+int main(void)
+{
+    int requests[MAX_REQUESTS];
+    int n, head;
+    int current;
+    long totalMovement = 0;
+
+    printf("Enter the number of disk requests (1-%d): ", MAX_REQUESTS);
+    if (scanf("%d", &n) != 1 || n < 1 || n > MAX_REQUESTS) {
+        printf("Invalid number of requests.\n");
+        return 1;
+    }
+
+    printf("Enter the initial head position: ");
+    if (scanf("%d", &head) != 1 || head < 0) {
+        printf("Invalid head position.\n");
+        return 1;
+    }
+
+    printf("Enter the requests in arrival order:\n");
+    for (int i = 0; i < n; i++) {
+        printf("Request %d: ", i + 1);
+        if (scanf("%d", &requests[i]) != 1 || requests[i] < 0) {
+            printf("Invalid request position.\n");
+            return 1;
+        }
+    }
+
+    current = head;
+    printf("\nService order: %d", head);
+
+    for (int i = 0; i < n; i++) {
+        totalMovement += labs((long)requests[i] - current);
+        current = requests[i];
+        printf(" -> %d", current);
+    }
+
+    printf("\nTotal head movement: %ld cylinders\n", totalMovement);
+    printf("Average head movement: %.2f cylinders/request\n",
+           (double)totalMovement / n);
+
+    return 0;
+}
