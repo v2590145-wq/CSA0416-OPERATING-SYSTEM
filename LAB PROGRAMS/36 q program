@@ -1,0 +1,79 @@
+#include <stdio.h>
+
+#define MAX_BLOCKS 100
+#define END_OF_FILE -1
+
+int main(void)
+{
+    int next[MAX_BLOCKS];
+    int used[MAX_BLOCKS] = {0};
+    int n, block, first = END_OF_FILE, last = END_OF_FILE;
+
+    printf("Enter the number of blocks in the file (1-%d): ", MAX_BLOCKS);
+    if (scanf("%d", &n) != 1 || n < 1 || n > MAX_BLOCKS) {
+        printf("Invalid number of blocks.\n");
+        return 1;
+    }
+
+    printf("Enter the disk block numbers in file order:\n");
+
+    for (int i = 0; i < n; i++) {
+        printf("Block %d: ", i + 1);
+
+        if (scanf("%d", &block) != 1 || block < 0 || block >= MAX_BLOCKS) {
+            printf("Invalid disk block number (must be 0-%d).\n",
+                   MAX_BLOCKS - 1);
+            return 1;
+        }
+
+        if (used[block]) {
+            printf("Block %d was entered more than once.\n", block);
+            return 1;
+        }
+
+        used[block] = 1;
+
+        if (i == 0)
+            first = block;
+        else
+            next[last] = block;
+
+        last = block;
+    }
+
+    next[last] = END_OF_FILE;
+
+    printf("\nDirectory entry:\n");
+    printf("First block: %d\n", first);
+    printf("Last block:  %d\n", last);
+
+    printf("\nBlock\tNext block\n");
+    for (int i = 0; i < n; i++) {
+        block = (i == 0) ? first : next[last]; /* traversal starts below */
+        (void)block;
+    }
+
+    /* Traverse the linked list from the first block. */
+    block = first;
+    while (block != END_OF_FILE) {
+        printf("%d\t", block);
+        if (next[block] == END_OF_FILE)
+            printf("EOF\n");
+        else
+            printf("%d\n", next[block]);
+
+        block = next[block];
+    }
+
+    printf("\nFile blocks in order: ");
+    block = first;
+    while (block != END_OF_FILE) {
+        printf("%d", block);
+        block = next[block];
+        if (block != END_OF_FILE)
+            printf(" -> ");
+    }
+    printf(" -> EOF\n");
+
+    return 0;
+}
