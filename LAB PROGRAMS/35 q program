@@ -1,0 +1,50 @@
+#include <stdio.h>
+
+#define MAX_BLOCKS 100
+
+int main(void)
+{
+    int indexBlock[MAX_BLOCKS];
+    int n, startBlock;
+
+    printf("Enter the starting block number for the index block: ");
+    if (scanf("%d", &startBlock) != 1 || startBlock < 0) {
+        printf("Invalid block number.\n");
+        return 1;
+    }
+
+    printf("Enter the number of data blocks in the file (1-%d): ", MAX_BLOCKS);
+    if (scanf("%d", &n) != 1 || n < 1 || n > MAX_BLOCKS) {
+        printf("Invalid number of blocks.\n");
+        return 1;
+    }
+
+    printf("Enter the block number for each data block:\n");
+    for (int i = 0; i < n; i++) {
+        printf("Block for file block %d: ", i + 1);
+        if (scanf("%d", &indexBlock[i]) != 1 || indexBlock[i] < 0) {
+            printf("Invalid block number.\n");
+            return 1;
+        }
+    }
+
+    printf("\nIndexed file allocation table\n");
+    printf("Index block: %d\n", startBlock);
+    printf("File block\tPhysical block\n");
+
+    for (int i = 0; i < n; i++) {
+        printf("%d\t\t%d\n", i + 1, indexBlock[i]);
+    }
+
+    int fileBlock;
+    printf("\nEnter a file block to access (1-%d): ", n);
+    if (scanf("%d", &fileBlock) != 1 || fileBlock < 1 || fileBlock > n) {
+        printf("Invalid file block.\n");
+        return 1;
+    }
+
+    printf("File block %d is stored in physical block %d.\n",
+           fileBlock, indexBlock[fileBlock - 1]);
+
+    return 0;
+}
