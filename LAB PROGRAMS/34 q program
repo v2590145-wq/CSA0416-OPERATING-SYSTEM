@@ -1,0 +1,67 @@
+#include <stdio.h>
+
+#define MAX_RECORDS 100
+
+int main(void)
+{
+    int records[MAX_RECORDS];
+    int n, choice, target;
+
+    printf("Enter number of records (1-%d): ", MAX_RECORDS);
+    if (scanf("%d", &n) != 1 || n < 1 || n > MAX_RECORDS) {
+        printf("Invalid number of records.\n");
+        return 1;
+    }
+
+    for (int i = 0; i < n; i++) {
+        printf("Enter data for record %d: ", i + 1);
+        if (scanf("%d", &records[i]) != 1) {
+            printf("Invalid record data.\n");
+            return 1;
+        }
+    }
+
+    do {
+        printf("\n1. Read all records\n");
+        printf("2. Access a record by position\n");
+        printf("0. Exit\n");
+        printf("Choice: ");
+
+        if (scanf("%d", &choice) != 1) {
+            printf("Invalid choice.\n");
+            return 1;
+        }
+
+        switch (choice) {
+        case 1:
+            printf("Reading records sequentially:\n");
+            for (int i = 0; i < n; i++) {
+                printf("Record %d: %d\n", i + 1, records[i]);
+            }
+            break;
+
+        case 2:
+            printf("Enter record position (1-%d): ", n);
+            if (scanf("%d", &target) != 1 || target < 1 || target > n) {
+                printf("Invalid record position.\n");
+                break;
+            }
+
+            printf("Reading records from the beginning:\n");
+            for (int i = 0; i < target; i++) {
+                printf("Record %d: %d\n", i + 1, records[i]);
+            }
+            printf("Requested record is %d.\n", records[target - 1]);
+            break;
+
+        case 0:
+            printf("Exiting.\n");
+            break;
+
+        default:
+            printf("Invalid choice.\n");
+        }
+    } while (choice != 0);
+
+    return 0;
+}
