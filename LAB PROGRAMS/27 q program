@@ -1,0 +1,88 @@
+#include <dirent.h>
+#include <stdio.h>
+#include <string.h>
+#include <sys/stat.h>
+#include <time.h>
+
+static void print_permissions(mode_t mode) {
+    putchar(S_ISDIR(mode) ? 'd' : '-');
+    putchar(mode & S_IRUSR ? 'r' : '-');
+    putchar(mode & S_IWUSR ? 'w' : '-');
+    putchar(mode & S_IXUSR ? 'x' : '-');
+    putchar(mode & S_IRGRP ? 'r' : '-');
+    putchar(mode & S_IWGRP ? 'w' : '-');
+    putchar(mode & S_IXGRP ? 'x' : '-');
+    putchar(mode & S_IROTH ? 'r' : '-');
+    putchar(mode & S_IWOTH ? 'w' : '-');
+    putchar(mode & S_IXOTH ? 'x' : '-');
+}
+
+int main(int argc, char *argv[]) {
+    int longFormat = 0;
+    const char *path = ".";
+
+    if (argc == 2) {
+        if (strcmp(argv[1], "-l") == 0) {
+            longFormat = 1;
+        } else {
+            path = argv[1];
+        }
+    } else if (argc == 3 && strcmp(argv[1], "-l") == 0) {
+        longFormat = 1;
+        path = argv[2];
+    } else if (argc > 3) {
+        fprintf(stderr, "Usage: %s [-l] [directory]\n", argv[0]);
+        return 1;
+    }
+
+    DIR *dir = opendir(path);
+    if (dir == NULL) {
+        perror(path);
+        return 1;
+    }
+
+    struct dirent *entry;
+
+    while ((entry = readdir(dir)) != NULL) {
+        /* Match ls's default behavior by hiding dot files. */
+        if (entry->d_name[0] == '.') {
+            continue;
+        }
+
+        if (!longFormat) {
+            printf("%s\n", entry->d_name);
+            continue;
+        }
+
+        char fullPath[4096];
+        int written = snprintf(fullPath, sizeof(fullPath), "%s/%s",
+                               path, entry->d_name);
+        if (written < 0 || (size_t)written >= sizeof(fullPath)) {
+            fprintf(stderr, "Path too long: %s/%s\n", path, entry->d_name);
+            continue;
+        }
+
+        struct stat info;
+        if (stat(fullPath, &info) != 0) {
+            perror(fullPath);
+            continue;
+        }
+
+        print_permissions(info.st_mode);
+        printf(" %8lld ", (long long)info.st_size);
+
+        char timeText[32];
+        struct tm *timeInfo = localtime(&info.st_mtime);
+        if (timeInfo != NULL &&
+            strftime(timeText, sizeof(timeText), "%b %d %H:%M", timeInfo) > 0) {
+            printf("%s ", timeText);
+        } else {
+            printf("unknown-time ");
+        }
+
+        printf("%s\n", entry->d_name);
+    }
+
+    closedir(dir);
+    return 0;
+}
