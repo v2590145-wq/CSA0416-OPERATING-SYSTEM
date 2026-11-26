@@ -1,0 +1,90 @@
+#include <dirent.h>
+#include <fcntl.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <unistd.h>
+
+#define SAMPLE_FILE "io_sample.txt"
+#define BUFFER_SIZE 128
+
+int main(int argc, char *argv[]) {
+    const char *directory = (argc > 1) ? argv[1] : ".";
+
+    /* Create a sample file. */
+    int fd = open(SAMPLE_FILE, O_CREAT | O_TRUNC | O_RDWR, 0644);
+    if (fd == -1) {
+        perror("open");
+        return EXIT_FAILURE;
+    }
+
+    const char text[] = "Demonstrating UNIX I/O system calls.\n";
+    if (write(fd, text, sizeof(text) - 1) == -1) {
+        perror("write");
+        close(fd);
+        return EXIT_FAILURE;
+    }
+
+    /* fcntl: get and display the file access mode. */
+    int flags = fcntl(fd, F_GETFL);
+    if (flags == -1) {
+        perror("fcntl");
+        close(fd);
+        return EXIT_FAILURE;
+    }
+    printf("fcntl: file access mode = %s\n",
+           (flags & O_ACCMODE) == O_RDWR ? "read/write" : "other");
+
+    /* lseek: move to the beginning, then read the file. */
+    if (lseek(fd, 0, SEEK_SET) == (off_t)-1) {
+        perror("lseek");
+        close(fd);
+        return EXIT_FAILURE;
+    }
+
+    char buffer[BUFFER_SIZE];
+    ssize_t bytesRead = read(fd, buffer, sizeof(buffer) - 1);
+    if (bytesRead == -1) {
+        perror("read");
+        close(fd);
+        return EXIT_FAILURE;
+    }
+    buffer[bytesRead] = '\0';
+    printf("\nFile contents:\n%s", buffer);
+
+    /* stat: retrieve file metadata. */
+    struct stat fileInfo;
+    if (stat(SAMPLE_FILE, &fileInfo) == -1) {
+        perror("stat");
+        close(fd);
+        return EXIT_FAILURE;
+    }
+    printf("\nstat: size = %lld bytes, permissions = %o\n",
+           (long long)fileInfo.st_size, (unsigned)(fileInfo.st_mode & 0777));
+
+    if (close(fd) == -1) {
+        perror("close");
+        return EXIT_FAILURE;
+    }
+
+    /* opendir and readdir: list entries in the requested directory. */
+    DIR *dir = opendir(directory);
+    if (dir == NULL) {
+        perror("opendir");
+        return EXIT_FAILURE;
+    }
+
+    printf("\nEntries in %s:\n", directory);
+    struct dirent *entry;
+    while ((entry = readdir(dir)) != NULL) {
+        printf("%s\n", entry->d_name);
+    }
+
+    if (closedir(dir) == -1) {
+        perror("closedir");
+        return EXIT_FAILURE;
+    }
+
+    return EXIT_SUCCESS;
+}
