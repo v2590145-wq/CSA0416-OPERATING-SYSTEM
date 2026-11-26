@@ -1,0 +1,109 @@
+#include <stdio.h>
+#include <stdlib.h>
+
+#define NAME_SIZE 256
+#define TEXT_SIZE 1024
+
+int main(void) {
+    int choice;
+    char filename[NAME_SIZE];
+    char text[TEXT_SIZE];
+
+    for (;;) {
+        printf("\nFile Management Operations\n");
+        printf("1. Create file\n");
+        printf("2. Write to file (overwrite)\n");
+        printf("3. Read file\n");
+        printf("4. Append to file\n");
+        printf("5. Delete file\n");
+        printf("6. Exit\n");
+        printf("Enter your choice: ");
+
+        if (scanf("%d", &choice) != 1) {
+            printf("Invalid input.\n");
+            return 1;
+        }
+
+        if (choice == 6) {
+            break;
+        }
+
+        if (choice < 1 || choice > 6) {
+            printf("Please choose a number from 1 to 6.\n");
+            continue;
+        }
+
+        printf("Enter filename: ");
+        if (scanf("%255s", filename) != 1) {
+            printf("Could not read filename.\n");
+            return 1;
+        }
+
+        FILE *file;
+
+        switch (choice) {
+            case 1:
+                file = fopen(filename, "w");
+                if (file == NULL) {
+                    perror("Could not create file");
+                } else {
+                    fclose(file);
+                    printf("File created: %s\n", filename);
+                }
+                break;
+
+            case 2:
+            case 4:
+                file = fopen(filename, choice == 2 ? "w" : "a");
+                if (file == NULL) {
+                    perror("Could not open file");
+                    break;
+                }
+
+                printf("Enter text (one line): ");
+                /* Consume the newline left by scanf. */
+                int ch;
+                while ((ch = getchar()) != '\n' && ch != EOF) {
+                    /* Discard characters. */
+                }
+
+                if (fgets(text, sizeof(text), stdin) == NULL) {
+                    printf("Could not read text.\n");
+                } else if (fputs(text, file) == EOF) {
+                    perror("Could not write to file");
+                } else {
+                    printf("Text %s.\n", choice == 2 ? "written" : "appended");
+                }
+
+                fclose(file);
+                break;
+
+            case 3:
+                file = fopen(filename, "r");
+                if (file == NULL) {
+                    perror("Could not open file");
+                    break;
+                }
+
+                printf("\nContents of %s:\n", filename);
+                while (fgets(text, sizeof(text), file) != NULL) {
+                    fputs(text, stdout);
+                }
+                if (ferror(file)) {
+                    perror("Error reading file");
+                }
+                fclose(file);
+                break;
+
+            case 5:
+                if (remove(filename) == 0) {
+                    printf("File deleted: %s\n", filename);
+                } else {
+                    perror("Could not delete file");
+                }
+                break;
+        }
+    }
+
+    return 0;
+}
