@@ -1,0 +1,45 @@
+#include <pthread.h>
+#include <stdio.h>
+#include <stdlib.h>
+
+void *worker(void *arg) {
+    printf("Worker thread is running.\n");
+
+    /* Return a value to the thread that joins this one. */
+    pthread_exit(arg);
+}
+
+int main(void) {
+    pthread_t thread1, thread2;
+    int result1 = 10;
+    int result2 = 20;
+    void *returnValue;
+
+    /* (i) Create two threads. */
+    if (pthread_create(&thread1, NULL, worker, &result1) != 0 ||
+        pthread_create(&thread2, NULL, worker, &result2) != 0) {
+        fprintf(stderr, "Failed to create thread.\n");
+        return EXIT_FAILURE;
+    }
+
+    /* (iii) Compare thread IDs. */
+    if (pthread_equal(thread1, thread2))
+        printf("The thread IDs are equal.\n");
+    else
+        printf("The thread IDs are different.\n");
+
+    /* (ii) Wait for thread1 to finish and collect its return value. */
+    if (pthread_join(thread1, &returnValue) != 0) {
+        fprintf(stderr, "Failed to join thread1.\n");
+        return EXIT_FAILURE;
+    }
+    printf("thread1 returned: %d\n", *(int *)returnValue);
+
+    /* Join thread2 so it finishes before the program exits. */
+    if (pthread_join(thread2, NULL) != 0) {
+        fprintf(stderr, "Failed to join thread2.\n");
+        return EXIT_FAILURE;
+    }
+
+    return EXIT_SUCCESS;
+}
