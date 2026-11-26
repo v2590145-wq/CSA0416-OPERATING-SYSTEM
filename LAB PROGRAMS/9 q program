@@ -1,0 +1,50 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/mman.h>
+#include <sys/wait.h>
+#include <unistd.h>
+
+#define SHM_SIZE 256
+
+int main(void) {
+    char *shared = mmap(NULL, SHM_SIZE,
+                        PROT_READ | PROT_WRITE,
+                        MAP_SHARED | MAP_ANONYMOUS,
+                        -1, 0);
+
+    if (shared == MAP_FAILED) {
+        perror("mmap");
+        return EXIT_FAILURE;
+    }
+
+    pid_t pid = fork();
+
+    if (pid < 0) {
+        perror("fork");
+        munmap(shared, SHM_SIZE);
+        return EXIT_FAILURE;
+    }
+
+    if (pid == 0) {
+        /* Child process reads the shared message. */
+        printf("Child received: %s\n", shared);
+
+        munmap(shared, SHM_SIZE);
+        _exit(EXIT_SUCCESS);
+    } else {
+        /* Parent process writes the shared message. */
+        const char message[] = "Hello from the parent process!";
+        memcpy(shared, message, sizeof(message));
+
+        if (waitpid(pid, NULL, 0) == -1) {
+            perror("waitpid");
+            munmap(shared, SHM_SIZE);
+            return EXIT_FAILURE;
+        }
+
+        munmap(shared, SHM_SIZE);
+    }
+
+    return EXIT_SUCCESS;
+}
